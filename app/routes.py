@@ -169,6 +169,7 @@ def init_routes(app):
         # 按时间排序（最新数据在最后）
         data.reverse()
 
+
         return {
             'timestamps': [d.upload_time.isoformat() for d in data],
             'temps': [d.temperature for d in data],
