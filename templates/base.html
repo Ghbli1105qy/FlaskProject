@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>水利数据监测系统</title>
+    <!-- Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 配置Tailwind自定义颜色和字体 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#0E42D2',
+                        accent: '#4080FF',
+                        success: '#00B42A',
+                        warning: '#FF7D00',
+                        danger: '#F53F3F',
+                        neutral: {
+                            100: '#F2F3F5',
+                            200: '#E5E6EB',
+                            300: '#C9CDD4',
+                            400: '#86909C',
+                            500: '#4E5969',
+                            600: '#272E3B',
+                            700: '#1D2129',
+                        }
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <!-- 自定义工具类 -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1);
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .transition-custom {
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-neutral-100 min-h-screen flex flex-col">
+    <!-- 导航栏 -->
+    <nav class="bg-white shadow-md sticky top-0 z-50 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="#" class="flex-shrink-0 flex items-center">
+                        <i class="fa fa-tint text-primary text-2xl mr-2"></i>
+                        <span class="text-lg font-semibold text-neutral-700">水利数据监测系统</span>
+                    </a>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <a href="{{ url_for('dashboard_page') }}" class="border-b-2 border-primary px-1 pt-1 text-sm font-medium text-primary">
+                            <i class="fa fa-dashboard mr-1"></i>仪表盘
+                        </a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    {% if current_user.is_authenticated %}
+                    <div class="flex items-center mr-4">
+                        <span class="text-sm font-medium text-neutral-700 mr-2">
+                            <i class="fa fa-user-circle-o mr-1"></i>{{ current_user.username }}
+                        </span>
+                        <a href="{{ url_for('logout_page') }}" class="text-sm text-neutral-500 hover:text-danger transition-colors">
+                            <i class="fa fa-sign-out mr-1"></i>退出
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容区 -->
+    <main class="flex-grow">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-white border-t border-neutral-200">
+        <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <p class="text-sm text-neutral-500">© 2025 水利数据监测系统. 保留所有权利.</p>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-neutral-400 hover:text-primary transition-colors">
+                        <i class="fa fa-question-circle"></i>
+                        <span class="ml-1 text-sm">帮助</span>
+                    </a>
+                    <a href="#" class="text-neutral-400 hover:text-primary transition-colors">
+                        <i class="fa fa-file-text-o"></i>
+                        <span class="ml-1 text-sm">文档</span>
+                    </a>
+                    <a href="#" class="text-neutral-400 hover:text-primary transition-colors">
+                        <i class="fa fa-envelope-o"></i>
+                        <span class="ml-1 text-sm">联系我们</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // 导航栏滚动效果
+        window.addEventListener('scroll', function() {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 10) {
+                navbar.classList.add('shadow-lg', 'bg-white/95', 'backdrop-blur-sm');
+            } else {
+                navbar.classList.remove('shadow-lg', 'bg-white/95', 'backdrop-blur-sm');
+            }
+        });
+
+        // 添加淡入动画
+        document.addEventListener('DOMContentLoaded', function() {
+            const fadeElements = document.querySelectorAll('.fade-in');
+            fadeElements.forEach((el, index) => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(20px)';
+                el.style.transition = 'opacity 0.6s ease-out, transform 0.6s ease-out';
+
+                setTimeout(() => {
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, 100 + index * 100);
+            });
+        });
+    </script>
+</body>
+</html>

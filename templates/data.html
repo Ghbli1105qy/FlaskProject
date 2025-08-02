@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>数据展示</h2>
+<div class="row">
+    <div class="col-md-6">
+        <h3>设备选择</h3>
+        <select id="deviceSelect" class="form-select">
+            {% for device in devices %}
+            <option value="{{ device.id }}">{{ device.id }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-6">
+        <h3>时间范围</h3>
+        <input type="date" id="startDate">
+        <input type="date" id="endDate">
+        <button onclick="fetchData()">查询</button>
+    </div>
+</div>
+
+<div class="mt-4">
+    <canvas id="dataChart" width="800" height="400"></canvas>
+</div>
+
+<script>
+function fetchData() {
+    const device = document.getElementById('deviceSelect').value;
+    const start = document.getElementById('startDate').value;
+    const end = document.getElementById('endDate').value;
+
+    fetch(`/api/data/timeseries?device_id=${device}&start=${start}&end=${end}`)
+        .then(res => res.json())
+        .then(data => {
+            const ctx = document.getElementById('dataChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.time),
+                    datasets: [{
+                        label: '雨量 (mm)',
+                        data: data.map(d => d.rainfall),
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        fill: false
+                    }]
+                }
+            });
+        });
+}
+</script>
+{% endblock %}

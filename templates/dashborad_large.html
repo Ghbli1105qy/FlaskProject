@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="text-2xl font-bold text-center my-8">可视化大屏</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-8">
+    <div class="bg-white rounded-lg shadow-md p-4">
+        <h3 class="text-lg font-medium mb-4">设备点位</h3>
+        <!-- 这里可以使用地图库展示设备点位 -->
+        <div id="device-map" style="height: 300px;"></div>
+    </div>
+    <div class="bg-white rounded-lg shadow-md p-4">
+        <h3 class="text-lg font-medium mb-4">设备状态</h3>
+        <table class="w-full">
+            <thead>
+                <tr>
+                    <th class="px-4 py-2 text-left">设备ID</th>
+                    <th class="px-4 py-2 text-left">电量</th>
+                    <th class="px-4 py-2 text-left">在线状态</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for device in devices %}
+                <tr>
+                    <td class="px-4 py-2">{{ device.id }}</td>
+                    <td class="px-4 py-2">{{ device.battery }}</td>
+                    <td class="px-4 py-2">
+                        {% if device.last_seen > (datetime.now() - timedelta(minutes=10)) %}
+                        <span class="text-green-500">在线</span>
+                        {% else %}
+                        <span class="text-red-500">离线</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-8">
+    <div class="bg-white rounded-lg shadow-md p-4">
+        <h3 class="text-lg font-medium mb-4">温湿度曲线</h3>
+        <canvas id="temperatureHumidityChart" width="800" height="400"></canvas>
+    </div>
+    <div class="bg-white rounded-lg shadow-md p-4">
+        <h3 class="text-lg font-medium mb-4">雨量实时数据</h3>
+        <table class="w-full">
+            <thead>
+                <tr>
+                    <th class="px-4 py-2 text-left">时间</th>
+                    <th class="px-4 py-2 text-left">雨量</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for data in rainfall_data %}
+                <tr>
+                    <td class="px-4 py-2">{{ data.upload_time }}</td>
+                    <td class="px-4 py-2">{{ data.rainfall }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<script src="{{ url_for('static', filename='js/moment.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/chart.js') }}"></script>
+<script src="{{ url_for('static', filename='js/chartjs-adapter-moment.min.js') }}"></script>
+<script>
+    // 温湿度曲线
+    const ctxTemperatureHumidity = document.getElementById('temperatureHumidityChart').getContext('2d');
+    new Chart(ctxTemperatureHumidity, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: '温度',
+                    data: [],
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    fill: false
+                },
+                {
+                    label: '湿度',
+                    data: [],
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    fill: false
+                }
+            ]
+        }
+    });
+
+
+    // 动态加载数据
+    function fetchData(deviceId, timeGranularity, chartId) {
+        fetch(`/api/data/timeseries/${timeGranularity}?device_id=${deviceId}`)
+           .then(res => res.json())
+           .then(data => {
+                const ctx = document.getElementById(chartId).getContext('2d');
+                const chart = Chart.getChart(ctx);
+                chart.data.labels = data.map(d => d.time);
+                chart.data.datasets[0].data = data.map(d => d.rainfall);
+                chart.update();
+            });
+    }
+
+    // 初始化数据加载
+    const deviceId = 'your_device_id'; // 替换为实际的设备ID
+    fetchData(deviceId, '5min', 'rainfall5minChart');
+    fetchData(deviceId, 'hour', 'rainfallHourChart');
+    fetchData(deviceId, 'month', 'rainfallMonthChart');
+</script>
+{% endblock %}

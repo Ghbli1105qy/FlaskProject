@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block content %}
+       <!-- 替换原有内联脚本 -->
+   <script src="{{ url_for('static', filename='js/dynamic_charts.js') }}"></script>
+
+<div class="p-6">
+    <!-- 设备基本信息 -->
+    <div class="bg-white rounded-xl shadow p-4 mb-6">
+        <div class="flex justify-between items-center">
+            <h2 class="text-xl font-bold">{{ device.id }}</h2>
+
+        </div>
+
+        <!-- 设备基本信息 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+            <div class="border rounded-lg p-3 text-center">
+                <p class="text-sm text-neutral-500">当前温度</p>
+                <p class="text-2xl font-semibold">{{ latest_data.temperature|default('N/A') }}°C</p>
+            </div>
+            <div class="border rounded-lg p-3 text-center">
+                <p class="text-sm text-neutral-500">当前湿度</p>
+                <p class="text-2xl font-semibold">{{ latest_data.humidity|default('N/A') }}%</p>
+            </div>
+            <div class="border rounded-lg p-3 text-center">
+                <p class="text-sm text-neutral-500">当前雨量</p>
+                <p class="text-2xl font-semibold">{{ latest_data.rainfall|default('N/A') }}mm</p>
+            </div>
+            <div class="border rounded-lg p-3 text-center">
+                <p class="text-sm text-neutral-500">电池电量</p>
+                <p class="text-2xl font-semibold">{{ latest_data.battery|default('N/A') }}%</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 双图表布局 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- 统一曲线（温湿度/当前雨量） -->
+        <div class="bg-white rounded-xl shadow p-4">
+            <h3 class="font-semibold mb-4">温湿度/当前雨量曲线</h3>
+            <canvas id="envChart" height="300"></canvas>
+        </div>
+
+        <!-- 电池曲线 -->
+        <div class="bg-white rounded-xl shadow p-4">
+            <h3 class="font-semibold mb-4">电池曲线</h3>
+            <canvas id="batteryChart" height="300"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js 依赖 -->
+<script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1"></script>
+<script src="{{ url_for('static', filename='js/dynamic_charts.js') }}"></script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // 获取后端传递的时间戳
+    const timestamps = {{ timestamps|tojson }};
+    const isValid = timestamps.every(ts => moment(ts).isValid());
+
+    if (!isValid) {
+        // 时间戳格式错误提示
+        document.getElementById('envChart').getContext('2d').canvas.parentNode.innerHTML = `
+            <div class="text-center text-red-500 p-4">
+                时间戳格式错误，请检查后端是否返回 ISO 格式时间（如 2025-07-20T15:00:00）
+            </div>
+        `;
+        return;
+    }
+
+    // 创建共享配置
+    const sharedOptions = {
+        responsive: true,
+        interaction: { mode: 'index' },
+        plugins: {
+            legend: { labels: { usePointStyle: true } },
+            tooltip: {
+                callbacks: {
+                    label: (context) => {
+                        return `${context.dataset.label}: ${context.raw} ${context.dataset.label.includes('温度') ? '°C' : context.dataset.label.includes('雨量') ? 'mm' : '%'}`;
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                type: 'time',
+                time: {
+                    tooltipFormat: 'yyyy-MM-dd HH:mm',
+                    unit: 'minute',
+                    displayFormats: {
+                        minute: 'HH:mm',
+                        hour: 'HH:mm',
+                        day: 'yyyy-MM-dd'
+                    }
+                },
+                title: { display: true, text: '时间' }
+            },
+            y: {
+                title: { display: true, text: '数值' },
+                beginAtZero: true
+            }
+        }
+    };
+
+    // 统一曲线配置
+    const envConfig = {
+        type: 'line',
+        data: {
+            labels: timestamps,
+            datasets: [
+                {
+                    label: '温度(°C)',
+                    data: {{ temps|tojson }},
+                    borderColor: '#F53F3F',
+                    fill: false,
+                    tension: 0.1
+                },
+                {
+                    label: '湿度(%)',
+                    data: {{ humids|tojson }},
+                    borderColor: '#165DFF',
+                    fill: false,
+                    tension: 0.1
+                },
+                {
+                    label: '当前雨量(mm)',
+                    data: {{ rainfalls|tojson }},
+                    borderColor: '#73D13D',
+                    fill: false,
+                    tension: 0.1
+                }
+            ]
+        },
+        options: sharedOptions
+    };
+
+    // 电池曲线配置（完全共享配置）
+    const batteryConfig = {
+        type: 'line',
+        data: {
+            labels: timestamps,
+            datasets: [{
+                label: '电池(%)',
+                data: {{ batteries|tojson }},
+                borderColor: '#F77234',
+                fill: false,
+                tension: 0.1
+            }]
+        },
+        options: sharedOptions
+    };
+
+    // 创建图表
+    new Chart(document.getElementById('envChart'), envConfig);
+    new Chart(document.getElementById('batteryChart'), batteryConfig);
+});
+</script>
+{% endblock %}
